@@ -24,6 +24,12 @@ CALCCOV=false
 THREADS=1
 BOWTIE2_OPT=''
 
+# Set MRKDUP for my system. Also, load picard tools and SAMtools
+module purge
+module load picard
+module load SAMtools
+MRKDUP='$EBROOTPICARD/picard.jar MarkDuplicates'
+
 # Parse options
 while getopts "khct:p:" opt; do
     case $opt in
