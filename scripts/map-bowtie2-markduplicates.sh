@@ -1,4 +1,23 @@
 #!/bin/bash
+#SBATCH -A zeller         
+#SBATCH -p 1week                   
+#SBATCH -N 1      
+#SBATCH -n 10                
+#SBATCH --mem 230G    
+#SBATCH -t 7-00:00      
+#SBATCH -o /g/scb2/zeller/fleck/logs/concoct-dist.out     
+#SBATCH -e /g/scb2/zeller/fleck/logs/concoct-dist.err         
+#SBATCH --mail-type=FAIL           
+#SBATCH --mail-user=jonas.simon.fleck@embl.de 
+
+module purge 
+module load Bowtie2
+module load Biopython
+module load picard
+module load SAMtools
+module load BEDTools
+module load concoct
+
 HELPDOC=$( cat <<EOF
 Maps given paired library to given reference with bowtie2 and uses picard to
 remove duplicates. Requires enviornmental variable MRKDUP to be set and point
@@ -23,6 +42,7 @@ RMTMPFILES=true
 CALCCOV=false
 THREADS=1
 BOWTIE2_OPT=''
+MRKDUP="${EBROOTPICARD}/picard.jar"
 
 # Parse options
 while getopts "khct:p:" opt; do
@@ -116,12 +136,12 @@ fi
 bowtie2 ${BOWTIE2_OPT} -p $THREADS -x $REF -1 $Q1 -2 $Q2 -S $OUTDIR/${RNAME}_${QNAME}.sam
 samtools faidx $REF
 samtools view -bt $REF.fai $OUTDIR/${RNAME}_${QNAME}.sam > $OUTDIR/${RNAME}_${QNAME}.bam
-samtools sort $OUTDIR/${RNAME}_${QNAME}.bam $OUTDIR/${RNAME}_${QNAME}-s
+samtools sort $OUTDIR/${RNAME}_${QNAME}.bam > $OUTDIR/${RNAME}_${QNAME}-s.bam
 samtools index $OUTDIR/${RNAME}_${QNAME}-s.bam
 
 # Mark duplicates and sort
 java -Xms1g -Xmx24g -XX:ParallelGCThreads=$THREADS -XX:MaxPermSize=1g -XX:+CMSClassUnloadingEnabled \
-    -jar $MRKDUP \
+    -jar $MRKDUP MarkDuplicates\
     INPUT=$OUTDIR/${RNAME}_${QNAME}-s.bam \
     OUTPUT=$OUTDIR/${RNAME}_${QNAME}-smd.bam \
     METRICS_FILE=$OUTDIR/${RNAME}_${QNAME}-smd.metrics \
